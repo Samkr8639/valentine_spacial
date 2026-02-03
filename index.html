@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Moment for You</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,500&family=Quicksand:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #fff5f6;
+            --accent: #ff8e9e;
+            --accent-dark: #e67382;
+            --text: #4a4a4a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Quicksand', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+            /* Animated Falling Hearts Background */
+            .falling-heart {
+                position: fixed;
+                top: -40px;
+                left: 0;
+                font-size: 2rem;
+                pointer-events: none;
+                z-index: 0;
+                animation: fall-heart linear forwards;
+            }
+            @keyframes fall-heart {
+                to {
+                    top: 110vh;
+                    transform: rotate(360deg);
+                }
+            }
+
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .core-container {
+            position: relative;
+            z-index: 10;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .main-heart {
+            font-size: 80px;
+            filter: drop-shadow(0 10px 15px rgba(255,142,158, 0.3));
+            user-select: none;
+        }
+
+        .instruction {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            opacity: 0.6;
+        }
+
+        /* Content Overlay */
+        .content-wrap {
+            position: absolute;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            z-index: 5;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-style: italic;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        #dynamic-text {
+            font-size: 1.1rem;
+            min-height: 60px;
+            line-height: 1.6;
+        }
+
+        /* Choice Section */
+        .choice-ui {
+            margin-top: 40px;
+            position: relative;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 35px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s;
+            box-shadow: 0 10px 20px rgba(255,142,158,0.2);
+            z-index: 100;
+        }
+
+        .btn-yes { 
+            background: var(--accent); 
+            color: white; 
+            font-size: 1.1rem;
+        }
+        .btn-yes:hover { transform: scale(1.1); background: var(--accent-dark); }
+
+        .btn-no { 
+            background: white; 
+            color: #999; 
+            border: 1px solid #eee;
+            position: absolute;
+        }
+
+        /* Petal messages */
+        .petal {
+            position: absolute;
+            padding: 12px 20px;
+            background: white;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            white-space: nowrap;
+            font-size: 0.85rem;
+            color: var(--accent);
+            border: 1px solid rgba(255,142,158,0.1);
+            opacity: 0;
+            z-index: 2;
+        }
+
+        /* Particles Classes (FIX ADDED HERE) */
+        .petal-particle, .confetti-piece {
+            position: absolute;
+            top: -20px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .petal-particle {
+            border-radius: 50% 0 50% 50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div class="core-container" id="stage">
+        <div class="main-heart">🌸</div>
+        <p class="instruction" id="hint">Tap to Bloom</p>
+    </div>
+
+    <div class="content-wrap" id="main-content">
+        <h1 id="title">Hey You...</h1>
+        <p id="dynamic-text">I've been thinking... In a world of temporary things, you're the one thing I want to keep forever.</p>
+        
+        <div class="choice-ui">
+            <button class="btn btn-yes" id="yes-btn" onclick="handleYes()">Be mine?</button>
+            <button class="btn btn-no" id="no-btn">No</button>
+        </div>
+    </div>
+
+    <div class="petal">Your laugh is music.</div>
+    <div class="petal">You're my safe place.</div>
+    <div class="petal">Better together.</div>
+    <div class="petal">Pure magic.</div>
+    <div class="petal">Always & Forever.</div>
+
+    <script>
+        const canvas = document.getElementById('canvas-container'); // FIX: Define canvas
+        const stage = document.getElementById('stage');
+        const content = document.getElementById('main-content');
+        const title = document.getElementById('title');
+        const text = document.getElementById('dynamic-text');
+        const petals = document.querySelectorAll('.petal');
+        const noBtn = document.getElementById('no-btn');
+        const yesBtn = document.getElementById('yes-btn');
+
+        let noCount = 0;
+        let yesStep = 0;
+
+        const noMessages = [
+            "Are you sure?", 
+            "Really? Think again!", 
+            "Wrong button, honey!", 
+            "Nice try, Speedster!", 
+            "Is that a glitch?", 
+            "Click 'Yes' instead! 😉",
+            "I can do this all day!",
+            "You're making me cry... 🥺"
+        ];
+
+        // Falling Hearts Background
+        function spawnHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'falling-heart';
+            heart.innerText = ['🌼','🌸','💕','💗','🌸','💞'][Math.floor(Math.random()*6)];
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.fontSize = (Math.random() * 1.5 + 1.2) + 'rem';
+            heart.style.animationDuration = (Math.random() * 2 + 3) + 's';
+            heart.style.opacity = Math.random() * 0.5 + 0.5;
+            document.body.appendChild(heart);
+            heart.addEventListener('animationend', () => heart.remove());
+        }
+        setInterval(spawnHeart, 400);
+
+        gsap.to(".main-heart", { scale: 1.1, duration: 0.8, repeat: -1, yoyo: true, ease: "power1.inOut" });
+
+        stage.addEventListener('click', () => {
+            gsap.to(".main-heart", { 
+                scale: 15, opacity: 0, duration: 1.5, ease: "expo.inOut",
+                onComplete: () => {
+                    stage.style.display = 'none';
+                    initContent();
+                }
+            });
+        });
+
+        function initContent() {
+            gsap.set(content, { visibility: 'visible' });
+            gsap.to(content, { opacity: 1, duration: 1.5, y: -20 });
+            
+            petals.forEach((petal, i) => {
+                const angle = (i / petals.length) * Math.PI * 2;
+                const radius = window.innerWidth < 600 ? 140 : 220;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+
+                gsap.fromTo(petal, 
+                    { opacity: 0, scale: 0, left: '50%', top: '50%' },
+                    { 
+                        opacity: 1, scale: 1, x: x, y: y, 
+                        duration: 1.2, delay: 0.5 + (i * 0.1), 
+                        ease: "elastic.out(1, 0.5)" 
+                    }
+                );
+            });
+        }
+
+        noBtn.addEventListener('mouseover', () => {
+            moveNoButton();
+        });
+
+        noBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            moveNoButton();
+        });
+
+        function moveNoButton() {
+            const maxX = 150;
+            const maxY = 150;
+            const newX = (Math.random() - 0.5) * maxX * 2;
+            const newY = (Math.random() - 0.5) * maxY * 2;
+            
+            noBtn.innerText = noMessages[noCount % noMessages.length];
+            noCount++;
+
+            gsap.to(yesBtn, { scale: 1 + (noCount * 0.05), duration: 0.3 });
+
+            gsap.to(noBtn, {
+                x: newX,
+                y: newY,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+        }
+
+        function handleYes() {
+            if (yesStep === 0) {
+                title.innerText = "Wait, really?!";
+                text.innerText = "You just made my heart skip a beat. Click it one more time if you mean it! ❤️";
+                yesBtn.innerText = "I DEFINITELY MEAN IT";
+                noBtn.style.display = "none";
+                yesStep++;
+                
+                gsap.from(text, { opacity: 0, y: 10, duration: 0.5 });
+                gsap.to(yesBtn, { scale: 1.3, duration: 0.4 });
+            } else {
+                startCelebration();
+            }
+        }
+
+        function startCelebration() {
+            gsap.to(".content-wrap, .petal", { opacity: 0, scale: 0.5, duration: 0.5, onComplete: () => {
+                document.getElementById('main-content').style.display = "none";
+            }});
+            
+            setTimeout(() => {
+                 const header = document.createElement('h1');
+                 header.style.cssText = "position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-family:'Playfair Display'; text-align:center; font-size:3rem; color:#ff8e9e; z-index:200; width:100%;";
+                 header.innerHTML = `
+                   <span class='header-line' style='display:block; opacity:0;'>You've made my</span>
+                   <span class='header-line' style='display:block; font-size:3.5rem; opacity:0;'>🌸 Day! 🌸</span>
+                   <span class='header-line' style='display:block; opacity:0;'>I Love You Betu Ji!</span>
+                 `;
+                 document.body.appendChild(header);
+                 const lines = header.querySelectorAll('.header-line');
+                 gsap.to(lines[0], { opacity: 1, y: -20, duration: 0.8, delay: 0.2, ease: 'power2.out' });
+                 gsap.to(lines[1], { opacity: 1, scale: 1.2, duration: 1, delay: 1, ease: 'elastic.out(1,0.5)' });
+                 gsap.to(lines[2], { opacity: 1, y: 20, duration: 0.8, delay: 2, ease: 'power2.out' });
+            }, 500);
+
+            setInterval(() => {
+                createParticle(Math.random() < 0.6 ? 'petal' : 'paper');
+            }, 80);
+        }
+
+       function createParticle(type) {
+            const particle = document.createElement('div');
+            const isPetal = type === 'petal';
+            
+            particle.className = isPetal ? 'petal-particle' : 'confetti-piece';
+            
+            if (isPetal) {
+                const size = Math.random() * 10 + 10;
+                particle.style.width = size + 'px';
+                particle.style.height = (size * 1.2) + 'px';
+                const hues = [345, 350, 355, 0];
+                const hue = hues[Math.floor(Math.random()*hues.length)];
+                particle.style.background = `linear-gradient(135deg, hsl(${hue}, 100%, 85%) 0%, hsl(${hue}, 80%, 75%) 100%)`;
+            } else {
+                const colors = ['#ffd700', '#ff8e9e', '#ff4d6d', '#74c0fc', '#b2f2bb'];
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.width = '10px';
+                particle.style.height = '10px';
+            }
+
+            particle.style.left = Math.random() * 100 + 'vw';
+            canvas.appendChild(particle);
+
+            gsap.to(particle, {
+                y: '110vh',
+                x: '+=' + (Math.random() * 200 - 100),
+                rotationX: Math.random() * 1000,
+                rotationY: Math.random() * 1000,
+                rotationZ: Math.random() * 1000,
+                duration: Math.random() * 3 + 4,
+                ease: "none",
+                onComplete: () => particle.remove()
+            });
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            const moveX = (e.clientX / window.innerWidth - 0.5) * 30;
+            const moveY = (e.clientY / window.innerHeight - 0.5) * 30;
+            gsap.to(".content-wrap", { x: moveX, y: moveY, duration: 1.2, ease: "power2.out" });
+        });
+    </script>
+</body>
+</html>
